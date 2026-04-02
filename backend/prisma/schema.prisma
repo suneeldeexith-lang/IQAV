@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") // Used for Supabase Pooling
+}
+
+enum Role {
+  ADMIN
+  FACULTY
+}
+
+enum Status {
+  PENDING
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum Category {
+  COURSE_PLANNING
+  OBE
+  TEACHING_LEARNING
+  ASSESSMENT
+  FEEDBACK
+}
+
+model User {
+  user_id       String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String        @db.VarChar(255)
+  email         String        @unique @db.VarChar(255)
+  password_hash String        @db.VarChar(255)
+  role          Role
+  created_at    DateTime      @default(now()) @db.Timestamptz()
+  updated_at    DateTime      @updatedAt @db.Timestamptz()
+  courses       Course[]
+  activityLogs  ActivityLog[]
+
+  @@map("users")
+}
+
+model Course {
+  course_id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  course_code           String            @db.VarChar(50)
+  course_name           String            @db.VarChar(255)
+  semester              String            @db.VarChar(50)
+  section               String            @db.VarChar(50)
+  faculty_id            String            @db.Uuid
+  completion_percentage Decimal           @default(0.0) @db.Decimal(5, 2)
+  created_at            DateTime          @default(now()) @db.Timestamptz()
+  updated_at            DateTime          @updatedAt @db.Timestamptz()
+  faculty               User              @relation(fields: [faculty_id], references: [user_id], onDelete: Restrict)
+  checklist_statuses    CourseChecklist[]
+
+  @@map("courses")
+}
+
+model ChecklistMaster {
+  checklist_id        String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  checklist_item_name String            @db.VarChar(255)
+  category            Category
+  required_flag       Boolean           @default(true)
+  created_at          DateTime          @default(now()) @db.Timestamptz()
+  course_checklists   CourseChecklist[]
+
+  @@map("checklist_master")
+}
+
+model CourseChecklist {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  course_id       String          @db.Uuid
+  checklist_id    String          @db.Uuid
+  status          Status          @default(PENDING)
+  remarks         String?
+  submission_date DateTime?       @db.Timestamptz()
+  last_updated    DateTime        @updatedAt @db.Timestamptz()
+  course          Course          @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
+  checklist_item  ChecklistMaster @relation(fields: [checklist_id], references: [checklist_id], onDelete: Restrict)
+  submissions     Submission[]
+
+  @@unique([course_id, checklist_id])
+  @@map("course_checklist_status")
+}
+
+model Submission {
+  submission_id       String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  course_checklist_id String          @db.Uuid
+  file_url            String
+  file_name           String
+  uploaded_at         DateTime        @default(now()) @db.Timestamptz()
+  course_checklist    CourseChecklist @relation(fields: [course_checklist_id], references: [id], onDelete: Cascade)
+
+  @@map("submissions")
+}
+
+model ActivityLog {
+  log_id      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String   @db.Uuid
+  action      String   @db.VarChar(255)
+  entity_type String   @db.VarChar(100)
+  entity_id   String   @db.Uuid
+  details     String?
+  created_at  DateTime @default(now()) @db.Timestamptz()
+  user        User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@map("activity_logs")
+}
