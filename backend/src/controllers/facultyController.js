@@ -87,6 +87,21 @@ class FacultyController {
                 return res.status(400).json({ error: 'No files provided for upload.' });
             }
 
+            // [NEW] Versioning Logic
+            const previousSubmissions = await prisma.submission.findMany({
+                where: { course_checklist_id: statusRecord.id, is_latest: true }
+            });
+
+            if (previousSubmissions.length > 0) {
+               await prisma.submission.updateMany({
+                   where: { course_checklist_id: statusRecord.id },
+                   data: { is_latest: false }
+               });
+            }
+
+            const currentVersion = previousSubmissions.length > 0 ? previousSubmissions[0].version + 1 : 1;
+            const replacedSubmissionId = previousSubmissions.length > 0 ? previousSubmissions[0].submission_id : null;
+
             const uploadPromises = req.files.map(async (file) => {
                 // Buffer to Supabase
                 const publicUrl = await CourseChecklistService.uploadFileToSupabase(
@@ -100,7 +115,11 @@ class FacultyController {
                     data: {
                         course_checklist_id: statusRecord.id,
                         file_url: publicUrl,
-                        file_name: file.originalname
+                        file_name: file.originalname,
+                        version: currentVersion,
+                        is_latest: true,
+                        uploaded_by: facultyId,
+                        replaced_submission_id: replacedSubmissionId
                     }
                 });
             });
@@ -115,11 +134,15 @@ class FacultyController {
                 });
             }
 
+            const isReplace = previousSubmissions.length > 0;
+            const actionType = isReplace ? 'REPLACE_FILE' : 'UPLOAD_FILE';
+
             // Log activity
-            await ActivityLogService.logAction(facultyId, 'UPLOAD_FILE', 'SUBMISSION', statusRecord.id, { 
+            await ActivityLogService.logAction(facultyId, actionType, 'SUBMISSION', statusRecord.id, { 
                 courseId, 
                 checklistId,
-                filesUploaded: savedSubmissions.length
+                version: currentVersion,
+                replaced_submission_id: replacedSubmissionId
             });
 
             res.status(200).json({ message: 'Files uploaded successfully.', submissions: savedSubmissions });
@@ -211,6 +234,34 @@ class FacultyController {
             throw new Error('Access denied or course not found.');
         }
         return true;
+    }
+    /**
+     * Get submission history per checklist item
+     */
+    static async getSubmissionHistory(req, res) {
+        try {
+            const { courseId, checklistId } = req.params;
+            const facultyId = req.user.userId;
+
+            await FacultyController._verifyCourseOwnership(courseId, facultyId);
+
+            const statusRecord = await prisma.courseChecklist.findUnique({
+                where: { course_id_checklist_id: { course_id: courseId, checklist_id: checklistId } }
+            });
+
+            if (!statusRecord) return res.status(200).json({ history: [] });
+
+            const history = await prisma.submission.findMany({
+                where: { course_checklist_id: statusRecord.id },
+                orderBy: { version: 'desc' },
+                include: { uploader: { select: { name: true, role: true } } }
+            });
+
+            res.status(200).json({ history });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Error fetching history.' });
+        }
     }
 }
 

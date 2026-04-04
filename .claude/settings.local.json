@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx prisma:*)",
+      "Bash(node prisma/seed.js)",
+      "Bash(node -e \":*)",
+      "Bash(netstat -ano)",
+      "Bash(dir /s /b)",
+      "Bash(findstr /v node_modules)",
+      "Bash(findstr /v \".git\")"
+    ]
+  }
+}

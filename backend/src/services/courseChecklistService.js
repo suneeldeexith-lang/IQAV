@@ -28,7 +28,7 @@ class CourseChecklistService {
      * Handle the streaming of a Multer file to Supabase Storage
      */
     static async uploadFileToSupabase(fileBuffer, originalName, mimetype) {
-        const bucket = process.env.SUPABASE_BUCKET_NAME || 'course-compliance-bucket';
+        const bucket = process.env.SUPABASE_BUCKET_NAME || 'course-files';
         const fileExt = originalName.split('.').pop();
         const fileName = `${uuidv4()}.${fileExt}`;
         const filePath = `submissions/${fileName}`;

@@ -1,11 +1,12 @@
 const { createClient } = require('@supabase/supabase-js');
 
-// Access variables
-const SUPABASE_URL = process.env.SUPABASE_PROJECT_URL;
-const SUPABASE_KEY = process.env.SUPABASE_API_KEY;
+// Access variables strictly matching new .env
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
-    console.warn("Missing Supabase project URL or API key in environment variables!");
+    console.error("FATAL: Missing Supabase URL or API key in environment variables!");
+    process.exit(1);
 }
 
 // Create a singleton Supabase client

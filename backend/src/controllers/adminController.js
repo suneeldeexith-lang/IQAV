@@ -10,10 +10,16 @@ class AdminController {
      */
     static async getDashboardMetrics(req, res) {
         try {
-            const totalCourses = await prisma.course.count();
-            const pendingReviewsCount = await prisma.courseChecklist.count({
-                where: { status: 'SUBMITTED' } // Items waiting for admin approval
-            });
+            const [totalCourses, totalFaculty, pendingReviews, allCourses] = await Promise.all([
+                prisma.course.count(),
+                prisma.user.count({ where: { role: 'FACULTY' } }),
+                prisma.courseChecklist.count({ where: { status: 'SUBMITTED' } }),
+                prisma.course.findMany({ select: { completion_percentage: true } }),
+            ]);
+
+            const overallCompliance = allCourses.length > 0
+                ? Math.round(allCourses.reduce((sum, c) => sum + Number(c.completion_percentage), 0) / allCourses.length)
+                : 0;
 
             const recentActivities = await prisma.activityLog.findMany({
                 take: 10,
@@ -22,8 +28,10 @@ class AdminController {
             });
 
             res.status(200).json({
-                total_courses: totalCourses,
-                pending_reviews: pendingReviewsCount,
+                totalCourses,
+                totalFaculty,
+                pendingReviews,
+                overallCompliance,
                 recent_logs: recentActivities
             });
         } catch (error) {
@@ -186,6 +194,31 @@ class AdminController {
         } catch (error) {
             console.error(error);
             if (!res.headersSent) res.status(500).json({ error: 'Failed to generate ZIP.' });
+        }
+    }
+    /**
+     * Get submission history per checklist item
+     */
+    static async getSubmissionHistory(req, res) {
+        try {
+            const { courseId, checklistId } = req.params;
+
+            const statusRecord = await prisma.courseChecklist.findUnique({
+                where: { course_id_checklist_id: { course_id: courseId, checklist_id: checklistId } }
+            });
+
+            if (!statusRecord) return res.status(200).json({ history: [] });
+
+            const history = await prisma.submission.findMany({
+                where: { course_checklist_id: statusRecord.id },
+                orderBy: { version: 'desc' },
+                include: { uploader: { select: { name: true, role: true } } }
+            });
+
+            res.status(200).json({ history });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Error fetching history.' });
         }
     }
 }

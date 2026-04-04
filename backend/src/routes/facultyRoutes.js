@@ -9,6 +9,7 @@ router.use(requireRole('FACULTY'));
 
 router.get('/courses', FacultyController.getAssignedCourses);
 router.get('/courses/:courseId', FacultyController.getCourseChecklist);
+router.get('/courses/:courseId/checklist/:checklistId/history', FacultyController.getSubmissionHistory);
 router.post('/courses/:courseId/checklist/:checklistId/upload', upload.array('files', 5), FacultyController.uploadFiles);
 router.delete('/submissions/:submissionId', FacultyController.deleteSubmission);
 router.patch('/courses/:courseId/checklist/:checklistId/submit', FacultyController.submitChecklist);

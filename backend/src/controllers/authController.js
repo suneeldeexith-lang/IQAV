@@ -19,14 +19,18 @@ class AuthController {
             });
 
             if (!user) {
+                console.log(`USER NOT FOUND: ${email}`);
                 return res.status(401).json({ error: 'Invalid credentials.' });
             }
 
             const isValidPassword = await bcrypt.compare(password, user.password_hash);
 
             if (!isValidPassword) {
+                console.log(`LOGIN FAILED: ${email}`);
                 return res.status(401).json({ error: 'Invalid credentials.' });
             }
+
+            console.log(`LOGIN SUCCESS: ${email} (${user.role})`);
 
             // Create JWT Payload
             const payload = {
