@@ -100,11 +100,12 @@ const FacultyCourseDetail = () => {
 
   const handleGlobalSubmit = () => {
     if (pendingItems.length > 0) {
-      setSubmitWarning(true);
-      setTimeout(() => setSubmitWarning(false), 4000);
-      return;
+      const confirm = window.confirm(
+        `You have ${pendingItems.length} checklist item(s) without files. Do you still want to submit with the files uploaded so far?`
+      );
+      if (!confirm) return;
     }
-    alert('Strict Compliance Validation Passed. Course successfully submitted to Admin.');
+    alert('Course submitted to Admin for review.');
   };
 
   if (loading) return <Loader text="Loading course details..." />;
@@ -140,7 +141,7 @@ const FacultyCourseDetail = () => {
             disabled={isOffline}
             className={clsx(
               "px-6 py-3 rounded-xl font-bold text-white transition-all shadow-md active:scale-95 disabled:scale-100 disabled:opacity-50",
-              pendingItems.length === 0 ? "bg-emerald-500 hover:bg-emerald-600 focus:ring-4 focus:ring-emerald-200" : "bg-slate-300 hover:bg-slate-400"
+              "bg-emerald-500 hover:bg-emerald-600 focus:ring-4 focus:ring-emerald-200"
             )}
           >
             Submit Course For Review
