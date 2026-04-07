@@ -17,7 +17,7 @@ const AdminCourseDetail = () => {
   // Action Modal State
   const [selectedItem, setSelectedItem] = useState(null);
   const [previewItem, setPreviewItem] = useState(null);
-  const [reviewAction, setReviewAction] = useState(null); // 'APPROVED' or 'REJECTED'
+  const [reviewAction, setReviewAction] = useState(null); // 'ADMIN_APPROVED' or 'REJECTED'
   const [remarks, setRemarks] = useState('');
 
   const fetchCourseData = async () => {
@@ -64,10 +64,10 @@ const AdminCourseDetail = () => {
   if (loading) return <Loader text="Fetching compliance data..." />;
   if (error) return <ErrorState message={error} onRetry={fetchCourseData} />;
 
-  const isFullyApproved = checklist.length > 0 && checklist.every(c => c.status_record?.status === 'APPROVED');
+  const isFullyApproved = checklist.length > 0 && checklist.every(c => ['ADMIN_APPROVED','APPROVED'].includes(c.status_record?.status));
   const hasPendingItems = checklist.some(c => {
     const s = c.status_record?.status;
-    return s !== 'SUBMITTED' && s !== 'APPROVED';
+    return s !== 'SUBMITTED' && s !== 'ADMIN_APPROVED' && s !== 'APPROVED';
   });
 
   const handleGlobalApproval = () => {
@@ -122,10 +122,11 @@ const AdminCourseDetail = () => {
                      <span className={clsx(
                        "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border",
                        status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                       status === 'ADMIN_APPROVED' ? 'bg-teal-50 text-teal-700 border-teal-200' :
                        status === 'REJECTED' ? 'bg-red-50 text-red-700 border-red-200' :
                        status === 'SUBMITTED' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-50 text-slate-500 border-slate-200'
                      )}>
-                       {status}
+                       {status === 'ADMIN_APPROVED' ? 'Admin Approved' : status}
                      </span>
                      <span className="text-sm font-medium text-slate-400">{item.category}</span>
                   </div>
@@ -149,7 +150,7 @@ const AdminCourseDetail = () => {
                   )}
                   {isSubmitted && (
                     <>
-                      <button onClick={() => handleReviewClick(item, 'APPROVED')} className="px-5 py-2.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition shadow-sm font-bold flex items-center">
+                      <button onClick={() => handleReviewClick(item, 'ADMIN_APPROVED')} className="px-5 py-2.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition shadow-sm font-bold flex items-center">
                         <CheckCircle2 className="w-4 h-4 mr-1.5" /> Approve
                       </button>
                       <button onClick={() => handleReviewClick(item, 'REJECTED')} className="px-5 py-2.5 bg-red-50 text-red-700 border border-red-200 rounded-xl hover:bg-red-100 transition shadow-sm font-bold flex items-center">
@@ -169,22 +170,22 @@ const AdminCourseDetail = () => {
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-5 border-b border-slate-100 bg-slate-50">
               <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
-                {reviewAction === 'APPROVED' ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <XCircle className="w-5 h-5 text-red-500" />}
-                {reviewAction === 'APPROVED' ? 'Approve Submission' : 'Reject Submission'}
+                {reviewAction === 'ADMIN_APPROVED' ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <XCircle className="w-5 h-5 text-red-500" />}
+                {reviewAction === 'ADMIN_APPROVED' ? 'Approve Submission' : 'Reject Submission'}
               </h3>
               <p className="text-sm font-medium text-slate-500 mt-1">{selectedItem.checklist_item_name}</p>
             </div>
             <form onSubmit={handleReviewSubmit} className="p-6">
               <label className="block text-sm font-semibold text-slate-700 mb-2">{reviewAction === 'REJECTED' ? 'Reason for Rejection *' : 'Feedback Notes (Optional)'}</label>
-              <textarea 
+              <textarea
                 value={remarks} onChange={(e) => setRemarks(e.target.value)} required={reviewAction === 'REJECTED'}
                 className="w-full border border-slate-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-brand-500 mb-6 bg-slate-50"
                 rows="3" placeholder={`Provide feedback to the faculty ${reviewAction === 'REJECTED' ? 'on what needs fixing...' : 'saying good job...'}`}
               ></textarea>
               <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
                 <button type="button" onClick={() => setSelectedItem(null)} className="px-5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl font-bold transition-colors">Cancel</button>
-                <button type="submit" className={clsx("px-5 py-2.5 text-white rounded-xl font-bold shadow-md transition-all", reviewAction === 'APPROVED' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-red-500 hover:bg-red-600')}>
-                  Confirm {reviewAction === 'APPROVED' ? 'Approval' : 'Rejection'}
+                <button type="submit" className={clsx("px-5 py-2.5 text-white rounded-xl font-bold shadow-md transition-all", reviewAction === 'ADMIN_APPROVED' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-red-500 hover:bg-red-600')}>
+                  Confirm {reviewAction === 'ADMIN_APPROVED' ? 'Approval' : 'Rejection'}
                 </button>
               </div>
             </form>

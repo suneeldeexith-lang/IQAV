@@ -4,6 +4,7 @@ import ProtectedRoute from './ProtectedRoute';
 import Login from '../pages/auth/Login';
 import AdminLayout from '../components/layout/AdminLayout';
 import FacultyLayout from '../components/layout/FacultyLayout';
+import CoordinatorLayout from '../components/layout/CoordinatorLayout';
 
 import FacultyDashboard from '../pages/faculty/FacultyDashboard';
 import FacultyCourseDetail from '../pages/faculty/FacultyCourseDetail';
@@ -11,6 +12,9 @@ import FacultyCourseDetail from '../pages/faculty/FacultyCourseDetail';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import AdminCourses from '../pages/admin/AdminCourses';
 import AdminCourseDetail from '../pages/admin/AdminCourseDetail';
+
+import CoordinatorDashboard from '../pages/coordinator/CoordinatorDashboard';
+import CoordinatorCourseDetail from '../pages/coordinator/CoordinatorCourseDetail';
 
 const AppRouter = () => {
   return (
@@ -43,6 +47,20 @@ const AppRouter = () => {
         <Route index element={<Navigate to="courses" replace />} />
         <Route path="courses" element={<FacultyDashboard />} />
         <Route path="courses/:id" element={<FacultyCourseDetail />} />
+      </Route>
+
+      {/* Coordinator Routes */}
+      <Route
+        path="/coordinator"
+        element={
+          <ProtectedRoute allowedRoles={['COORDINATOR']}>
+            <CoordinatorLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<CoordinatorDashboard />} />
+        <Route path="courses" element={<CoordinatorDashboard />} />
+        <Route path="courses/:id" element={<CoordinatorCourseDetail />} />
       </Route>
 
       {/* Catch all */}

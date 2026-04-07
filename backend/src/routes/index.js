@@ -3,6 +3,7 @@ const express = require('express');
 const authRoutes = require('./authRoutes');
 const adminRoutes = require('./adminRoutes');
 const facultyRoutes = require('./facultyRoutes');
+const coordinatorRoutes = require('./coordinatorRoutes');
 
 const router = express.Router();
 
@@ -22,5 +23,6 @@ router.get('/health', async (req, res) => {
 router.use('/auth', authRoutes);
 router.use('/admin', adminRoutes);
 router.use('/faculty', facultyRoutes);
+router.use('/coordinator', coordinatorRoutes);
 
 module.exports = router;

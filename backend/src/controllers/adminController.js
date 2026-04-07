@@ -106,8 +106,8 @@ class AdminController {
             const { status, remarks } = req.body;
             const adminId = req.user.userId;
 
-            if (!['APPROVED', 'REJECTED'].includes(status)) {
-                return res.status(400).json({ error: 'Status must be APPROVED or REJECTED.' });
+            if (!['ADMIN_APPROVED', 'REJECTED'].includes(status)) {
+                return res.status(400).json({ error: 'Status must be ADMIN_APPROVED or REJECTED.' });
             }
 
             // Using transaction ensures we don't end up in an uncertain state

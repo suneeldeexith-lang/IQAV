@@ -5,17 +5,19 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL") // Used for Supabase Pooling
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
   ADMIN
   FACULTY
+  COORDINATOR
 }
 
 enum Status {
   PENDING
   SUBMITTED
+  ADMIN_APPROVED
   APPROVED
   REJECTED
 }
@@ -29,16 +31,17 @@ enum Category {
 }
 
 model User {
-  user_id       String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name          String        @db.VarChar(255)
-  email         String        @unique @db.VarChar(255)
-  password_hash String        @db.VarChar(255)
-  role          Role
-  created_at    DateTime      @default(now()) @db.Timestamptz()
-  updated_at    DateTime      @updatedAt @db.Timestamptz()
-  courses       Course[]
-  activityLogs  ActivityLog[]
-  submissions   Submission[]
+  user_id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                 String          @db.VarChar(255)
+  email                String          @unique @db.VarChar(255)
+  password_hash        String          @db.VarChar(255)
+  role                 Role
+  created_at           DateTime        @default(now()) @db.Timestamptz()
+  updated_at           DateTime        @updatedAt @db.Timestamptz()
+  courses              Course[]        @relation("FacultyCourses")
+  coordinating_courses Course[]        @relation("CoordinatorCourses")
+  activityLogs         ActivityLog[]
+  submissions          Submission[]
 
   @@map("users")
 }
@@ -50,10 +53,12 @@ model Course {
   semester              String            @db.VarChar(50)
   section               String            @db.VarChar(50)
   faculty_id            String            @db.Uuid
+  coordinator_id        String?           @db.Uuid
   completion_percentage Decimal           @default(0.0) @db.Decimal(5, 2)
   created_at            DateTime          @default(now()) @db.Timestamptz()
   updated_at            DateTime          @updatedAt @db.Timestamptz()
-  faculty               User              @relation(fields: [faculty_id], references: [user_id], onDelete: Restrict)
+  faculty               User              @relation("FacultyCourses", fields: [faculty_id], references: [user_id], onDelete: Restrict)
+  coordinator           User?             @relation("CoordinatorCourses", fields: [coordinator_id], references: [user_id], onDelete: SetNull)
   checklist_statuses    CourseChecklist[]
 
   @@map("courses")
@@ -71,16 +76,19 @@ model ChecklistMaster {
 }
 
 model CourseChecklist {
-  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  course_id       String          @db.Uuid
-  checklist_id    String          @db.Uuid
-  status          Status          @default(PENDING)
-  remarks         String?
-  submission_date DateTime?       @db.Timestamptz()
-  last_updated    DateTime        @updatedAt @db.Timestamptz()
-  course          Course          @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
-  checklist_item  ChecklistMaster @relation(fields: [checklist_id], references: [checklist_id], onDelete: Restrict)
-  submissions     Submission[]
+  id                      String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  course_id               String          @db.Uuid
+  checklist_id            String          @db.Uuid
+  status                  Status          @default(PENDING)
+  remarks                 String?
+  coordinator_status      Status          @default(PENDING)
+  coordinator_remarks     String?
+  coordinator_reviewed_at DateTime?       @db.Timestamptz()
+  submission_date         DateTime?       @db.Timestamptz()
+  last_updated            DateTime        @updatedAt @db.Timestamptz()
+  course                  Course          @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
+  checklist_item          ChecklistMaster @relation(fields: [checklist_id], references: [checklist_id], onDelete: Restrict)
+  submissions             Submission[]
 
   @@unique([course_id, checklist_id])
   @@map("course_checklist_status")

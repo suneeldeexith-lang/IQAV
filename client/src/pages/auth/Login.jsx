@@ -20,6 +20,8 @@ const Login = () => {
       const user = await login(email, password);
       if (user.role === 'ADMIN') {
         navigate('/admin');
+      } else if (user.role === 'COORDINATOR') {
+        navigate('/coordinator');
       } else {
         navigate('/faculty');
       }
