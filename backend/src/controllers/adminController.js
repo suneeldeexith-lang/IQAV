@@ -76,7 +76,7 @@ class AdminController {
             const masterChecklist = await prisma.checklistMaster.findMany();
             const statuses = await prisma.courseChecklist.findMany({
                 where: { course_id: courseId },
-                include: { submissions: true }
+                include: { submissions: { where: { is_latest: true } } }
             });
 
             const checklistWithFiles = masterChecklist.map(item => {
@@ -200,6 +200,48 @@ class AdminController {
             if (!res.headersSent) res.status(500).json({ error: 'Failed to generate ZIP.' });
         }
     }
+    /**
+     * Admin delete a specific submission file
+     */
+    static async deleteSubmission(req, res) {
+        try {
+            const { submissionId } = req.params;
+            const adminId = req.user.userId;
+
+            const submission = await prisma.submission.findUnique({
+                where: { submission_id: submissionId },
+                include: { course_checklist: true }
+            });
+
+            if (!submission) return res.status(404).json({ error: 'Submission not found.' });
+
+            // Delete from DB (cascades handled by Prisma)
+            await prisma.submission.delete({ where: { submission_id: submissionId } });
+
+            // Reset checklist status back to PENDING if no more submissions
+            const remaining = await prisma.submission.count({
+                where: { course_checklist_id: submission.course_checklist_id }
+            });
+
+            if (remaining === 0) {
+                await prisma.courseChecklist.update({
+                    where: { id: submission.course_checklist_id },
+                    data: { status: 'PENDING', remarks: null, coordinator_status: 'PENDING', coordinator_remarks: null, coordinator_reviewed_at: null }
+                });
+                await require('../services/completionService').recalculateCourseCompletion(submission.course_checklist.course_id);
+            }
+
+            await ActivityLogService.logAction(adminId, 'ADMIN_DELETE_SUBMISSION', 'SUBMISSION', submissionId, {
+                file_name: submission.file_name
+            });
+
+            res.status(200).json({ message: 'File deleted successfully.' });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Failed to delete submission.' });
+        }
+    }
+
     /**
      * Get submission history per checklist item
      */

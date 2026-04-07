@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../../services/api';
-import { ArrowLeft, CheckCircle2, XCircle, Download, Eye, UserCheck } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, Download, Eye, UserCheck, Trash2 } from 'lucide-react';
 import clsx from 'clsx';
 import Loader from '../../components/common/Loader';
 import ErrorState from '../../components/common/ErrorState';
@@ -26,6 +26,7 @@ const AdminCourseDetail = () => {
   const [previewItem, setPreviewItem] = useState(null);
   const [reviewAction, setReviewAction] = useState(null);
   const [remarks, setRemarks] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
 
   const fetchCourseData = async () => {
     setLoading(true);
@@ -43,6 +44,19 @@ const AdminCourseDetail = () => {
   };
 
   useEffect(() => { fetchCourseData(); }, [id]);
+
+  const handleDeleteSubmission = async (submissionId, fileName) => {
+    if (!window.confirm(`Are you sure you want to delete "${fileName}"? This cannot be undone.`)) return;
+    setDeletingId(submissionId);
+    try {
+      await api.delete(`/admin/submissions/${submissionId}`);
+      await fetchCourseData();
+    } catch (err) {
+      alert('Delete failed: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const handleReviewClick = (item, action) => {
     setSelectedItem(item);
@@ -157,14 +171,28 @@ const AdminCourseDetail = () => {
                     )}
                   </div>
 
-                  <div className="flex gap-2 items-center flex-shrink-0">
+                  <div className="flex gap-2 items-center flex-shrink-0 flex-wrap justify-end">
                     {status !== 'PENDING' && (
-                      <button
-                        onClick={() => setPreviewItem(item)}
-                        className="inline-flex items-center px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 text-sm font-bold rounded-xl shadow-sm transition"
-                      >
-                        <Eye className="w-4 h-4 mr-2" /> Preview
-                      </button>
+                      <>
+                        <button
+                          onClick={() => setPreviewItem(item)}
+                          className="inline-flex items-center px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 text-sm font-bold rounded-xl shadow-sm transition"
+                        >
+                          <Eye className="w-4 h-4 mr-2" /> Preview
+                        </button>
+                        {item.status_record?.submissions?.[0] && (
+                          <button
+                            onClick={() => handleDeleteSubmission(
+                              item.status_record.submissions[item.status_record.submissions.length - 1]?.submission_id || item.status_record.submissions[0].submission_id,
+                              item.status_record.submissions[0].file_name
+                            )}
+                            disabled={deletingId !== null}
+                            className="inline-flex items-center px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 text-sm font-bold rounded-xl shadow-sm transition disabled:opacity-50"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" /> Delete File
+                          </button>
+                        )}
+                      </>
                     )}
                     {canIQACApprove && (
                       <>
