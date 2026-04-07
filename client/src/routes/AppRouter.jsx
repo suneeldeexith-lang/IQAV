@@ -36,13 +36,13 @@ const AppRouter = () => {
       </Route>
 
       {/* Faculty Routes */}
-      <Route 
-        path="/faculty" 
+      <Route
+        path="/faculty"
         element={
-          <ProtectedRoute allowedRoles={['FACULTY']}>
+          <ProtectedRoute allowedRoles={['FACULTY', 'COORDINATOR']}>
             <FacultyLayout />
           </ProtectedRoute>
-        } 
+        }
       >
         <Route index element={<Navigate to="courses" replace />} />
         <Route path="courses" element={<FacultyDashboard />} />

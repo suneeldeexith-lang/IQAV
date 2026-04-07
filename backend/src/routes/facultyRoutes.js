@@ -5,7 +5,7 @@ const { authenticate, requireRole } = require('../middlewares/auth');
 const upload = require('../middlewares/upload');
 
 router.use(authenticate);
-router.use(requireRole('FACULTY'));
+router.use(requireRole(['FACULTY', 'COORDINATOR']));
 
 router.get('/courses', FacultyController.getAssignedCourses);
 router.get('/courses/:courseId', FacultyController.getCourseChecklist);
