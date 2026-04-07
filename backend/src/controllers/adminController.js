@@ -13,7 +13,7 @@ class AdminController {
             const [totalCourses, totalFaculty, pendingReviews, allCourses] = await Promise.all([
                 prisma.course.count(),
                 prisma.user.count({ where: { role: 'FACULTY' } }),
-                prisma.courseChecklist.count({ where: { status: 'SUBMITTED' } }),
+                prisma.courseChecklist.count({ where: { status: 'COORDINATOR_APPROVED' } }),
                 prisma.course.findMany({ select: { completion_percentage: true } }),
             ]);
 
@@ -106,14 +106,18 @@ class AdminController {
             const { status, remarks } = req.body;
             const adminId = req.user.userId;
 
-            if (!['ADMIN_APPROVED', 'REJECTED'].includes(status)) {
-                return res.status(400).json({ error: 'Status must be ADMIN_APPROVED or REJECTED.' });
+            if (!['APPROVED', 'REJECTED'].includes(status)) {
+                return res.status(400).json({ error: 'Status must be APPROVED or REJECTED.' });
             }
 
             // Using transaction ensures we don't end up in an uncertain state
             const updatedRecord = await prisma.$transaction(async (tx) => {
                 const record = await tx.courseChecklist.findUnique({ where: { id } });
                 if (!record) throw new Error('Checklist status record not found.');
+
+                if (record.status !== 'COORDINATOR_APPROVED' && status === 'APPROVED') {
+                    throw new Error('Item must be approved by Course Coordinator before IQAC final approval.');
+                }
 
                 const update = await tx.courseChecklist.update({
                     where: { id },

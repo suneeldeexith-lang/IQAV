@@ -65,9 +65,13 @@ class CoordinatorController {
       const record = await prisma.courseChecklist.findUnique({ where: { id } });
       if (!record) return res.status(404).json({ error: 'Record not found.' });
 
-      if (record.status !== 'ADMIN_APPROVED') {
-        return res.status(400).json({ error: 'Item must be approved by admin first before coordinator review.' });
+      if (record.status !== 'SUBMITTED') {
+        return res.status(400).json({ error: 'Item must be submitted by faculty before coordinator review.' });
       }
+
+      // Coordinator approves → becomes COORDINATOR_APPROVED (waiting for IQAC final approval)
+      // Coordinator rejects → goes back to REJECTED
+      const newStatus = status === 'APPROVED' ? 'COORDINATOR_APPROVED' : 'REJECTED';
 
       const updatedRecord = await prisma.courseChecklist.update({
         where: { id },
@@ -75,7 +79,7 @@ class CoordinatorController {
           coordinator_status: status,
           coordinator_remarks: remarks || null,
           coordinator_reviewed_at: new Date(),
-          status: status,
+          status: newStatus,
         }
       });
 

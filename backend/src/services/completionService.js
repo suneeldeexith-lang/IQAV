@@ -18,7 +18,7 @@ class CompletionService {
             const completedItems = await prisma.courseChecklist.count({
                 where: {
                     course_id: courseId,
-                    status: { in: ['ADMIN_APPROVED', 'APPROVED'] },
+                    status: { in: ['COORDINATOR_APPROVED', 'APPROVED'] },
                     checklist_item: { required_flag: true }
                 }
             });

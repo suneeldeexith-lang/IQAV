@@ -7,11 +7,11 @@ import ErrorState from '../../components/common/ErrorState';
 import clsx from 'clsx';
 
 const STATUS_CONFIG = {
-  PENDING:        { label: 'Pending Upload',         color: 'bg-slate-100 text-slate-600' },
-  SUBMITTED:      { label: 'Under Admin Review',     color: 'bg-yellow-100 text-yellow-700' },
-  ADMIN_APPROVED: { label: 'Awaiting Your Review',   color: 'bg-blue-100 text-blue-700' },
-  APPROVED:       { label: 'Fully Approved',         color: 'bg-green-100 text-green-700' },
-  REJECTED:       { label: 'Rejected',               color: 'bg-red-100 text-red-700' },
+  PENDING:               { label: 'Pending Upload',         color: 'bg-slate-100 text-slate-600' },
+  SUBMITTED:             { label: 'Awaiting Your Review',   color: 'bg-blue-100 text-blue-700' },
+  COORDINATOR_APPROVED:  { label: 'Sent to IQAC',           color: 'bg-yellow-100 text-yellow-700' },
+  APPROVED:              { label: 'IQAC Approved ✓',        color: 'bg-green-100 text-green-700' },
+  REJECTED:              { label: 'Rejected',               color: 'bg-red-100 text-red-700' },
 };
 
 const CoordinatorCourseDetail = () => {
@@ -58,8 +58,8 @@ const CoordinatorCourseDetail = () => {
   if (loading) return <Loader text="Loading course..." />;
   if (error) return <ErrorState message={error} onRetry={fetchCourse} />;
 
-  const pendingReview = checklist.filter(c => c.status_record?.status === 'ADMIN_APPROVED');
-  const approved = checklist.filter(c => c.status_record?.status === 'APPROVED');
+  const pendingReview = checklist.filter(c => c.status_record?.status === 'SUBMITTED');
+  const approved = checklist.filter(c => ['COORDINATOR_APPROVED','APPROVED'].includes(c.status_record?.status));
   const rejected = checklist.filter(c => c.status_record?.status === 'REJECTED');
 
   // Group by category
@@ -102,7 +102,7 @@ const CoordinatorCourseDetail = () => {
 
       {pendingReview.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700 font-medium">
-          ✅ {pendingReview.length} item(s) have been approved by Admin and are waiting for your review. Click each item to approve or reject.
+          📋 {pendingReview.length} item(s) submitted by faculty are waiting for your review. Click each item to approve or reject before sending to IQAC.
         </div>
       )}
 
@@ -119,7 +119,7 @@ const CoordinatorCourseDetail = () => {
                 const status = statusRecord?.status || 'PENDING';
                 const config = STATUS_CONFIG[status] || STATUS_CONFIG.PENDING;
                 const isExpanded = expandedItem === item.checklist_id;
-                const canReview = status === 'ADMIN_APPROVED';
+                const canReview = status === 'SUBMITTED';
                 const latestFile = statusRecord?.submissions?.[0];
 
                 return (
